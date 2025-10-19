@@ -1543,91 +1543,71 @@
                 
                 // URL থেকে রেফারেল প্যারামিটার চেক করুন
                 const urlParams = new URLSearchParams(window.location.search);
-                let referralId = urlParams.get('start');
+                let referralIdFromUrl = urlParams.get('start');
                 
                 // যদি URL-এ start প্যারামিটার না থাকে, তাহলে startapp চেক করুন
-                if (!referralId) {
-                    referralId = urlParams.get('startapp');
+                if (!referralIdFromUrl) {
+                    referralIdFromUrl = urlParams.get('startapp');
                 }
                 
-                console.log("URL থেকে রেফারেল ID:", referralId);
+                console.log("URL থেকে রেফারেল ID:", referralIdFromUrl);
                 
-                // Telegram Web App এর start_param চেক করুন
+                // Telegram Web App এর start_param চেক করুন (যদি Web App নতুন করে খোলা হয়)
                 const tgStartParam = tg.initDataUnsafe.start_param;
-                if (tgStartParam) {
-                    referralId = tgStartParam;
-                    console.log("Telegram start_param থেকে রেফারেল ID:", referralId);
-                }
+                let finalReferralId = tgStartParam || referralIdFromUrl;
                 
-                // রেফারেল ID পাওয়া গেলে এবং এটি বর্তমান ইউজারের ID না হলে প্রসেস করুন
-                if (referralId && referralId !== userData.id.toString()) {
-                    console.log("রেফারেল পাওয়া গেছে:", referralId);
+                console.log("চূড়ান্ত রেফারেল ID:", finalReferralId);
+                
+                const isNewUser = !localStorage.getItem(`user_${userData.id}`);
+                console.log("বর্তমান ইউজার কি নতুন?", isNewUser);
+
+                // যদি রেফারেল আইডি থাকে এবং এটি বর্তমান ইউজারের আইডি না হয়
+                if (finalReferralId && finalReferralId !== userData.id.toString()) {
+                    console.log("রেফারেল পাওয়া গেছে:", finalReferralId);
                     
-                    // বর্তমান ইউজার কি নতুন? যদি নতুন হয় তাহলে জয়েন বোনাস পেতে পারে।
-                    const isNewUser = !localStorage.getItem(`user_${userData.id}`);
-                    
-                    // রেফারেল প্রদানকারীর ডেটা লোড করুন
-                    let referrerData = JSON.parse(localStorage.getItem(`user_${referralId}`));
+                    let referrerData = JSON.parse(localStorage.getItem(`user_${finalReferralId}`));
                     console.log('রেফারেল প্রদানকারীর ডেটা:', referrerData);
 
                     // রেফারেল প্রদানকারী যদি থাকে
                     if (referrerData) {
                         // একই রেফারেল থেকে আগে বোনাস দেওয়া হয়েছে কিনা চেক করুন (বর্তমান ইউজারের জন্য)
-                        const referralHistory = JSON.parse(localStorage.getItem(`ref_history_${userData.id}`) || '{}');
+                        // এই ইউজারের মাধ্যমে এই রেফারেল আইডি থেকে আগে বোনাস দেওয়া হয়েছে কিনা।
+                        const referralBonusGiven = JSON.parse(localStorage.getItem(`referral_bonus_given_for_${userData.id}`) || '{}');
                         
-                        if (!referralHistory[referralId]) {
+                        if (!referralBonusGiven[finalReferralId]) {
                             // রেফারেল প্রদানকারীর ব্যালেন্স ১৫০ টাকা বাড়ান
                             referrerData.balance = (referrerData.balance || 0) + 150;
                             referrerData.referralCount = (referrerData.referralCount || 0) + 1;
-                            localStorage.setItem(`user_${referralId}`, JSON.stringify(referrerData));
+                            localStorage.setItem(`user_${finalReferralId}`, JSON.stringify(referrerData));
                             
-                            // রেফারেল হিস্ট্রি আপডেট করুন
-                            referralHistory[referralId] = true;
-                            localStorage.setItem(`ref_history_${userData.id}`, JSON.stringify(referralHistory));
+                            // নিশ্চিত করুন যে এই রেফারেল আইডি থেকে এই ইউজারের জন্য একবারই বোনাস দেওয়া হয়েছে
+                            referralBonusGiven[finalReferralId] = true;
+                            localStorage.setItem(`referral_bonus_given_for_${userData.id}`, JSON.stringify(referralBonusGiven));
                             
-                            console.log('রেফারেল বোনাস দেওয়া হয়েছে:', referrerData);
-                            
-                            // রেফারেল প্রদানকারীকে নোটিফিকেশন দিন (যদি তিনি অনলাইন থাকেন, এই অংশে ব্যাকএন্ড ইন্টিগ্রেশন প্রয়োজন)
-                            // আপাতত শুধু কনসোলে লগ
-                            console.log(`ইউজার ${referralId} কে ১৫০ টাকা রেফারেল বোনাস দেওয়া হয়েছে।`);
-
-                            if (userData.id.toString() === referralId) {
-                                // If the referrer is the current user, update their UI
-                                userData.balance = referrerData.balance;
-                                userData.referralCount = referrerData.referralCount;
-                                saveUserData();
-                                updateUserInterface();
-                                setTimeout(() => {
-                                    showNotification('💰 রেফারেল বোনাস! আপনার অ্যাকাউন্টে ১৫০ টাকা যোগ করা হয়েছে।');
-                                }, 1500);
-                            }
+                            console.log(`ইউজার ${finalReferralId} কে ১৫০ টাকা রেফারেল বোনাস দেওয়া হয়েছে। নতুন ব্যালেন্স: ${referrerData.balance}`);
+                            showNotification(`💰 আপনার রেফারেল সফল! ${referrerData.firstName || 'একজন ইউজার'} কে রেফার করার জন্য ১৫০ টাকা পেয়েছেন।`);
                         } else {
                             console.log('এই রেফারেল থেকে আগেই বোনাস নেওয়া হয়েছে, রেফারেল প্রদানকারীকে আর বোনাস দেওয়া হবে না।');
                         }
                     } else {
-                        console.log('রেফারেল প্রদানকারীর ডেটা পাওয়া যায়নি।');
+                        console.log('রেফারেল প্রদানকারীর ডেটা পাওয়া যায়নি। সম্ভবত রেফারেল আইডি ভুল অথবা সেই ইউজারটি নেই।');
                     }
-                    
-                    // নতুন ইউজারকে জয়েন বোনাস দিন (যদি সে নতুন হয়)
-                    if (isNewUser) {
-                        userData.balance = 50; // জয়েন বোনাস
-                        saveUserData();
-                        updateUserInterface();
-                        setTimeout(() => {
-                            showNotification('🎉 রেফারেল সফল! আপনি ৫০ টাকা জয়েন বোনাস পেয়েছেন।');
-                        }, 1000);
-                    }
-                    
-                } else if (!localStorage.getItem(`user_${userData.id}`)) {
-                    // কোন রেফারেল আইডি না থাকলে অথবা রেফারেল আইডি বর্তমান ইউজারেরই হলে, এবং ইউজার নতুন হলে জয়েন বোনাস দিন
-                    console.log("কোন রেফারেল নেই অথবা ইউজার নিজেই রেফারার, নতুন ইউজার হিসেবে জয়েন বোনাস দিন");
-                    userData.balance = 50; // জয়েন বোনাস
-                    saveUserData();
+                }
+                
+                // নতুন ইউজারকে জয়েন বোনাস দিন (যদি সে নতুন হয়)
+                if (isNewUser) {
+                    console.log("নতুন ইউজার, জয়েন বোনাস দেওয়া হচ্ছে।");
+                    userData.balance += 50; // জয়েন বোনাস
+                    saveUserData(); // জয়েন বোনাস দিয়ে ডেটা সেভ করুন
                     updateUserInterface();
                     setTimeout(() => {
                         showNotification('🎉 স্বাগতম! আপনি ৫০ টাকা জয়েন বোনাস পেয়েছেন।');
                     }, 1000);
+                } else {
+                    // যদি ইউজার নতুন না হয়, শুধু UI আপডেট করুন
+                    updateUserInterface();
                 }
+
             } catch (error) {
                 console.error('রেফারেল চেক করার সময় Error:', error);
                 // error হলে অন্তত জয়েন বোনাস দিন যদি ইউজার নতুন হয়
@@ -1672,6 +1652,10 @@
                     const parsedData = JSON.parse(storedData);
                     userData.balance = parsedData.balance || 0;
                     userData.referralCount = parsedData.referralCount || 0;
+                    // অন্যান্য ডেটা যেমন firstName, username ইত্যাদিও লোড করা যেতে পারে যদি প্রয়োজন হয়
+                    userData.firstName = parsedData.firstName || userData.firstName;
+                    userData.username = parsedData.username || userData.username;
+                    userData.referralCode = parsedData.referralCode || userData.referralCode;
                 } else {
                     // নতুন ইউজারের জন্য ডিফল্ট ডেটা (জয়েন বোনাস checkForReferral ফাংশনে দেওয়া হবে)
                     userData.balance = 0; 
@@ -1791,7 +1775,7 @@
             
             // টিউটোরিয়াল বাটন ক্লিক ইভেন্ট
             document.getElementById('tutorialBtn').addEventListener('click', function() {
-                window.open('https://youtube.com', '_blank');
+                window.open('https://youtube.com', '_blank'); // আপনার ইউটিউব চ্যানেলের লিংক দিন
             });
             
             // বিজ্ঞাপন দেখুন বাটন ক্লিক ইভেন্ট
@@ -1814,13 +1798,13 @@
             });
             
             // টেলিগ্রাম চ্যানেল ওপেন বাটন ফাংশন
-            function setupTelegramButtons(openBtnId, claimBtnId, messageBoxId, channelNumber) {
+            function setupTelegramButtons(openBtnId, claimBtnId, messageBoxId, channelLink) {
                 const openBtn = document.getElementById(openBtnId);
                 const claimBtn = document.getElementById(claimBtnId);
                 const messageBox = document.getElementById(messageBoxId);
                 
                 openBtn.addEventListener('click', function() {
-                    window.open(`https://t.me/channel_${channelNumber}`, '_blank');
+                    window.open(channelLink, '_blank');
                 });
                 
                 claimBtn.addEventListener('click', function() {
@@ -1836,28 +1820,40 @@
                         // এখানে বাস্তব চেকিং কোড যুক্ত হবে (যেমন: টেলিগ্রাম API ব্যবহার করে ইউজার চ্যানেলে আছে কিনা চেক করা)
                         // যেহেতু এটি ক্লায়েন্ট-সাইড কোড, তাই এখানে বাস্তব চেকিং সম্ভব নয়।
                         // এর জন্য একটি ব্যাকএন্ড সার্ভিস প্রয়োজন।
-                        messageBox.textContent = 'চেক করা হচ্ছে... সিস্টেম প্রস্তুত';
-                        messageBox.className = 'message-box checking-message';
-                        // যদি সফলভাবে চেক হয়, তাহলে:
-                        // userData.balance += 200; // উদাহরণস্বরূপ
-                        // saveUserData();
-                        // updateUserInterface();
-                        // showNotification('✅ টাস্ক সফল! ২০০ টাকা যোগ করা হয়েছে।');
-                        // button.classList.add('claimed');
-                        // button.disabled = true;
+                        // আপাতত একটি সিমুলেশন দিচ্ছি।
+                        const isJoined = Math.random() > 0.5; // ৫০% সম্ভাবনা জয়েন করার
+                        
+                        if (isJoined) {
+                            if (!button.classList.contains('claimed')) {
+                                userData.balance += 200; // উদাহরণস্বরূপ
+                                saveUserData();
+                                updateUserInterface();
+                                showNotification('✅ টাস্ক সফল! ২০০ টাকা যোগ করা হয়েছে।');
+                                button.classList.add('claimed');
+                                button.disabled = true;
+                                messageBox.textContent = '✅ টাস্ক সফলভাবে সম্পন্ন হয়েছে!';
+                                messageBox.className = 'message-box success-message';
+                            } else {
+                                messageBox.textContent = 'আপনি ইতিমধ্যেই এই টাস্কটি সম্পন্ন করেছেন।';
+                                messageBox.className = 'message-box error-message';
+                            }
+                        } else {
+                            messageBox.textContent = 'টাস্ক সম্পন্ন হয়নি অথবা আপনি চ্যানেলে জয়েন করেননি।';
+                            messageBox.className = 'message-box error-message';
+                        }
                     }, 2000);
                 });
             }
             
-            // ৪টি টেলিগ্রাম চ্যানেল সেটআপ
-            setupTelegramButtons('openTelegram1Btn', 'claimTelegram1Btn', 'telegram1Message', 'your_telegram_channel_id_1'); // আপনার চ্যানেল আইডি দিন
-            setupTelegramButtons('openTelegram2Btn', 'claimTelegram2Btn', 'telegram2Message', 'your_telegram_channel_id_2'); // আপনার চ্যানেল আইডি দিন
-            setupTelegramButtons('openTelegram3Btn', 'claimTelegram3Btn', 'telegram3Message', 'your_telegram_channel_id_3'); // আপনার চ্যানেল আইডি দিন
-            setupTelegramButtons('openTelegram4Btn', 'claimTelegram4Btn', 'telegram4Message', 'your_telegram_channel_id_4'); // আপনার চ্যানেল আইডি দিন
+            // ৪টি টেলিগ্রাম চ্যানেল সেটআপ (আপনার প্রকৃত লিংক দিন)
+            setupTelegramButtons('openTelegram1Btn', 'claimTelegram1Btn', 'telegram1Message', 'https://t.me/your_telegram_channel_1');
+            setupTelegramButtons('openTelegram2Btn', 'claimTelegram2Btn', 'telegram2Message', 'https://t.me/your_telegram_channel_2');
+            setupTelegramButtons('openTelegram3Btn', 'claimTelegram3Btn', 'telegram3Message', 'https://t.me/your_telegram_channel_3');
+            setupTelegramButtons('openTelegram4Btn', 'claimTelegram4Btn', 'telegram4Message', 'https://t.me/your_telegram_channel_4');
             
             // ইউটিউব চ্যানেল ওপেন বাটন
             document.getElementById('openYoutubeBtn').addEventListener('click', function() {
-                window.open('https://youtube.com/c/your_youtube_channel_name', '_blank'); // আপনার ইউটিউব চ্যানেলের লিংক দিন
+                window.open('https://youtube.com/channel/your_youtube_channel_id', '_blank'); // আপনার ইউটিউব চ্যানেলের লিংক দিন
             });
             
             // ইউটিউব ক্লেইম বাটন
@@ -1873,15 +1869,26 @@
                 // ২ সেকেন্ড পর রেজাল্ট দেখান
                 setTimeout(() => {
                     // এখানে বাস্তব চেকিং কোড যুক্ত হবে
-                    messageBox.textContent = 'চেক করা হচ্ছে... সিস্টেম প্রস্তুত';
-                    messageBox.className = 'message-box checking-message';
-                    // যদি সফলভাবে চেক হয়, তাহলে:
-                    // userData.balance += 200; // উদাহরণস্বরূপ
-                    // saveUserData();
-                    // updateUserInterface();
-                    // showNotification('✅ টাস্ক সফল! ২০০ টাকা যোগ করা হয়েছে।');
-                    // button.classList.add('claimed');
-                    // button.disabled = true;
+                    const isSubscribed = Math.random() > 0.5; // ৫০% সম্ভাবনা সাবস্ক্রাইব করার
+                    
+                    if (isSubscribed) {
+                        if (!button.classList.contains('claimed')) {
+                            userData.balance += 200; // উদাহরণস্বরূপ
+                            saveUserData();
+                            updateUserInterface();
+                            showNotification('✅ টাস্ক সফল! ২০০ টাকা যোগ করা হয়েছে।');
+                            button.classList.add('claimed');
+                            button.disabled = true;
+                            messageBox.textContent = '✅ টাস্ক সফলভাবে সম্পন্ন হয়েছে!';
+                            messageBox.className = 'message-box success-message';
+                        } else {
+                            messageBox.textContent = 'আপনি ইতিমধ্যেই এই টাস্কটি সম্পন্ন করেছেন।';
+                            messageBox.className = 'message-box error-message';
+                        }
+                    } else {
+                        messageBox.textContent = 'টাস্ক সম্পন্ন হয়নি অথবা আপনি চ্যানেলে সাবস্ক্রাইব করেননি।';
+                        messageBox.className = 'message-box error-message';
+                    }
                 }, 2000);
             });
             
@@ -2157,10 +2164,12 @@
                             document.getElementById('adminIcon').style.display = 'flex';
                             isHistoryActive = true;
                             renderWithdrawalHistory(); // হিস্টরি লোড করুন
+                            loadAdminRequests(); // এডমিন প্যানেলও লোড করুন
                         } else {
                             document.getElementById('adminIcon').style.display = 'none';
                             isHistoryActive = false;
                         }
+                        updateUserInterface(); // সেকশন পরিবর্তনের সাথে সাথে UI আপডেট করুন
                     }
                 });
             });
