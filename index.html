@@ -805,23 +805,7 @@
             color: var(--dark);
         }
         
-        .admin-icon {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            background: linear-gradient(to right, var(--primary), var(--secondary));
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-            z-index: 100;
-            animation: pulse 2s infinite;
-        }
+        /* এডমিন আইকন CSS মুছে ফেলা হয়েছে */
         
         .admin-login-modal {
             display: none;
@@ -1144,8 +1128,7 @@
     </style>
     <!-- Monetag ad code will be inserted here -->
     <!-- আপনার Monetag বিজ্ঞাপন কোড এখানে পেস্ট করুন -->
-    <!-- উদাহরণস্বরূপ: -->
-    <!-- <script async data-cfasync="false" src="//pl2345678.highperformancetraffic.com/c1/23/d4/e5f6g7h8.js"></script> -->
+    <script src='//libtl.com/sdk.js' data-zone='10065083' data-sdk='show_10065083'></script>
 </head>
 <body>
     <div class="container">
@@ -1468,10 +1451,7 @@
         </div>
     </div>
     
-    <!-- এডমিন আইকন -->
-    <div class="admin-icon" id="adminIcon">
-        <i class="fas fa-user-shield"></i>
-    </div>
+    <!-- এডমিন আইকন HTML মুছে ফেলা হয়েছে -->
     
     <!-- ফুটার নেভিগেশন -->
     <div class="footer-nav">
@@ -1846,7 +1826,7 @@
             }
             
             // ৪টি টেলিগ্রাম চ্যানেল সেটআপ (আপনার প্রকৃত লিংক দিন)
-            setupTelegramButtons('openTelegram1Btn', 'claimTelegram1Btn', 'telegram1Message', 'https://t.me/your_telegram_channel_1');
+            setupTelegramButtons('openTelegram1Btn', 'claimTelegram1Btn', 'telegram1Message', 'https://t.me/money_hunt_6');
             setupTelegramButtons('openTelegram2Btn', 'claimTelegram2Btn', 'telegram2Message', 'https://t.me/your_telegram_channel_2');
             setupTelegramButtons('openTelegram3Btn', 'claimTelegram3Btn', 'telegram3Message', 'https://t.me/your_telegram_channel_3');
             setupTelegramButtons('openTelegram4Btn', 'claimTelegram4Btn', 'telegram4Message', 'https://t.me/your_telegram_channel_4');
@@ -2159,14 +2139,14 @@
                         
                         document.getElementById(targetId).style.display = 'block';
                         
-                        // হিস্ট্রি সেকশনে এডমিন আইকন দেখান
+                        // হিস্ট্রি সেকশনে এডমিন আইকন দেখান - এই অংশ মুছে ফেলা হয়েছে
                         if (targetId === 'historySection') {
-                            document.getElementById('adminIcon').style.display = 'flex';
+                            // document.getElementById('adminIcon').style.display = 'flex'; // এডমিন আইকন মুছে ফেলা হয়েছে
                             isHistoryActive = true;
                             renderWithdrawalHistory(); // হিস্টরি লোড করুন
                             loadAdminRequests(); // এডমিন প্যানেলও লোড করুন
                         } else {
-                            document.getElementById('adminIcon').style.display = 'none';
+                            // document.getElementById('adminIcon').style.display = 'none'; // এডমিন আইকন মুছে ফেলা হয়েছে
                             isHistoryActive = false;
                         }
                         updateUserInterface(); // সেকশন পরিবর্তনের সাথে সাথে UI আপডেট করুন
@@ -2174,12 +2154,12 @@
                 });
             });
             
-            // এডমিন আইকন ক্লিক
-            document.getElementById('adminIcon').addEventListener('click', function() {
-                if (isHistoryActive) {
-                    document.getElementById('adminLoginModal').style.display = 'flex';
-                }
-            });
+            // এডমিন আইকন ক্লিক - এই অংশ মুছে ফেলা হয়েছে
+            // document.getElementById('adminIcon').addEventListener('click', function() {
+            //     if (isHistoryActive) {
+            //         document.getElementById('adminLoginModal').style.display = 'flex';
+            //     }
+            // });
             
             // হিস্ট্রি সেকশন সক্রিয়তা ট্র্যাকিং
             let isHistoryActive = false;
