@@ -10,7 +10,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, query, where, getDocs, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, query, where, getDocs, onSnapshot, addDoc, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         
         // Firebase configuration
         const firebaseConfig = {
@@ -44,6 +44,7 @@
         window.firebaseOnSnapshot = onSnapshot;
         window.firebaseAddDoc = addDoc;
         window.firebaseServerTimestamp = serverTimestamp;
+        window.firebaseOrderBy = orderBy;
     </script>
     
     <style>
@@ -629,6 +630,233 @@
             transform: translateY(0);
         }
         
+        /* Withdraw Page Styles */
+        .withdraw-container {
+            width: 100%;
+            max-width: 400px;
+            padding-bottom: 70px;
+            animation: fadeInScale 0.8s ease-out;
+        }
+        
+        .withdraw-form {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 0.8s ease-out 0.6s both;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .withdraw-btn {
+            background: linear-gradient(to right, #3498db, #2ecc71);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
+            font-weight: bold;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .withdraw-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(52, 152, 219, 0.5);
+        }
+        
+        .withdraw-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .withdraw-info {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 0.8s ease-out 0.8s both;
+        }
+        
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        
+        .info-label {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .info-value {
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        /* History Page Styles */
+        .history-container {
+            width: 100%;
+            max-width: 400px;
+            padding-bottom: 70px;
+            animation: fadeInScale 0.8s ease-out;
+        }
+        
+        .history-list {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 0.8s ease-out 0.6s both;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f1f1;
+            animation: fadeInUp 0.5s ease-out;
+        }
+        
+        .history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .history-details {
+            flex: 1;
+        }
+        
+        .history-type {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+        
+        .history-date {
+            color: #7f8c8d;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        
+        .history-amount {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .history-amount.positive {
+            color: #27ae60;
+        }
+        
+        .history-amount.negative {
+            color: #e74c3c;
+        }
+        
+        .history-empty {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+        
+        /* Support Page Styles */
+        .support-container {
+            width: 100%;
+            max-width: 400px;
+            padding-bottom: 70px;
+            animation: fadeInScale 0.8s ease-out;
+        }
+        
+        .support-info {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            animation: slideInUp 0.8s ease-out 0.6s both;
+        }
+        
+        .support-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .support-item:hover {
+            background: rgba(52, 152, 219, 0.1);
+        }
+        
+        .support-icon {
+            width: 40px;
+            height: 40px;
+            background: #3498db;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        
+        .support-details {
+            flex: 1;
+        }
+        
+        .support-title {
+            font-weight: 600;
+            color: #2c3e50;
+            font-size: 14px;
+            margin-bottom: 2px;
+        }
+        
+        .support-value {
+            color: #7f8c8d;
+            font-size: 13px;
+        }
+        
         /* Footer Navigation */
         .footer {
             position: fixed;
@@ -849,21 +1077,25 @@
         }
         
         /* Scrollbar Styling */
-        .notice-container::-webkit-scrollbar {
+        .notice-container::-webkit-scrollbar,
+        .history-list::-webkit-scrollbar {
             width: 4px;
         }
         
-        .notice-container::-webkit-scrollbar-track {
+        .notice-container::-webkit-scrollbar-track,
+        .history-list::-webkit-scrollbar-track {
             background: #f1f1f1;
             border-radius: 8px;
         }
         
-        .notice-container::-webkit-scrollbar-thumb {
+        .notice-container::-webkit-scrollbar-thumb,
+        .history-list::-webkit-scrollbar-thumb {
             background: #3498db;
             border-radius: 8px;
         }
         
-        .notice-container::-webkit-scrollbar-thumb:hover {
+        .notice-container::-webkit-scrollbar-thumb:hover,
+        .history-list::-webkit-scrollbar-thumb:hover {
             background: #2980b9;
         }
         
@@ -899,7 +1131,7 @@
                 padding: 5px;
             }
             
-            .notice-container, .home-container, .tasks-container {
+            .notice-container, .home-container, .tasks-container, .withdraw-container, .history-container, .support-container {
                 max-width: 100%;
             }
         }
@@ -1151,6 +1383,244 @@
         </div>
     </div>
 
+    <!-- Withdraw Page -->
+    <div id="withdrawPage" class="page">
+        <div class="withdraw-container">
+            <!-- Header with User Info -->
+            <div class="page-header">
+                <div class="page-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="page-user-info">
+                    <div class="page-user-name" id="withdrawUserName">লোড হচ্ছে...</div>
+                    <div class="page-user-id" id="withdrawUserId">ID: লোড হচ্ছে...</div>
+                </div>
+            </div>
+            
+            <!-- Balance Card -->
+            <div class="page-balance-card">
+                <div class="page-balance-label">আপনার মোট আয়</div>
+                <div class="page-balance-amount" id="withdrawTotalEarnings">০ টাকা</div>
+            </div>
+            
+            <!-- Withdraw Info -->
+            <div class="withdraw-info">
+                <div class="info-item">
+                    <span class="info-label">ন্যূনতম উত্তোলন:</span>
+                    <span class="info-value">২০০ টাকা</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">উত্তোলন ফি:</span>
+                    <span class="info-value">১০ টাকা</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">প্রসেসিং সময়:</span>
+                    <span class="info-value">২৪-৪৮ ঘন্টা</span>
+                </div>
+            </div>
+            
+            <!-- Withdraw Form -->
+            <div class="withdraw-form">
+                <div class="section-title">উত্তোলন ফর্ম</div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="withdrawMethod">পেমেন্ট মেথড</label>
+                    <select class="form-input" id="withdrawMethod">
+                        <option value="bkash">বিকাশ</option>
+                        <option value="nagad">নগদ</option>
+                        <option value="rocket">রকেট</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="accountNumber">অ্যাকাউন্ট নম্বর</label>
+                    <input type="text" class="form-input" id="accountNumber" placeholder="01XXXXXXXXX">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="withdrawAmount">উত্তোলনের পরিমাণ</label>
+                    <input type="number" class="form-input" id="withdrawAmount" placeholder="২০০" min="200">
+                </div>
+                
+                <button class="withdraw-btn" id="withdrawBtn">
+                    উত্তোলন রিকোয়েস্ট করুন
+                </button>
+            </div>
+        </div>
+        
+        <!-- Footer Navigation -->
+        <div class="footer">
+            <a href="#" class="footer-item" data-page="homePage">
+                <i class="fas fa-home footer-icon"></i>
+                <span>হোম</span>
+            </a>
+            <a href="#" class="footer-item" data-page="tasksPage">
+                <i class="fas fa-tasks footer-icon"></i>
+                <span>টাস্ক</span>
+            </a>
+            <a href="#" class="footer-item active" data-page="withdrawPage">
+                <i class="fas fa-wallet footer-icon"></i>
+                <span>উইথড্র</span>
+            </a>
+            <a href="#" class="footer-item" data-page="historyPage">
+                <i class="fas fa-history footer-icon"></i>
+                <span>হিস্ট্রি</span>
+            </a>
+            <a href="#" class="footer-item" data-page="supportPage">
+                <i class="fas fa-headset footer-icon"></i>
+                <span>সাপোর্ট</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- History Page -->
+    <div id="historyPage" class="page">
+        <div class="history-container">
+            <!-- Header with User Info -->
+            <div class="page-header">
+                <div class="page-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="page-user-info">
+                    <div class="page-user-name" id="historyUserName">লোড হচ্ছে...</div>
+                    <div class="page-user-id" id="historyUserId">ID: লোড হচ্ছে...</div>
+                </div>
+            </div>
+            
+            <!-- Balance Card -->
+            <div class="page-balance-card">
+                <div class="page-balance-label">আপনার মোট আয়</div>
+                <div class="page-balance-amount" id="historyTotalEarnings">০ টাকা</div>
+            </div>
+            
+            <!-- History List -->
+            <div class="history-list">
+                <div class="section-title">ট্রানজেকশন হিস্ট্রি</div>
+                <div id="historyList">
+                    <div class="history-empty">
+                        <i class="fas fa-history" style="font-size: 40px; margin-bottom: 10px; color: #bdc3c7;"></i>
+                        <div>কোন ট্রানজেকশন নেই</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer Navigation -->
+        <div class="footer">
+            <a href="#" class="footer-item" data-page="homePage">
+                <i class="fas fa-home footer-icon"></i>
+                <span>হোম</span>
+            </a>
+            <a href="#" class="footer-item" data-page="tasksPage">
+                <i class="fas fa-tasks footer-icon"></i>
+                <span>টাস্ক</span>
+            </a>
+            <a href="#" class="footer-item" data-page="withdrawPage">
+                <i class="fas fa-wallet footer-icon"></i>
+                <span>উইথড্র</span>
+            </a>
+            <a href="#" class="footer-item active" data-page="historyPage">
+                <i class="fas fa-history footer-icon"></i>
+                <span>হিস্ট্রি</span>
+            </a>
+            <a href="#" class="footer-item" data-page="supportPage">
+                <i class="fas fa-headset footer-icon"></i>
+                <span>সাপোর্ট</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Support Page -->
+    <div id="supportPage" class="page">
+        <div class="support-container">
+            <!-- Header with User Info -->
+            <div class="page-header">
+                <div class="page-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="page-user-info">
+                    <div class="page-user-name" id="supportUserName">লোড হচ্ছে...</div>
+                    <div class="page-user-id" id="supportUserId">ID: লোড হচ্ছে...</div>
+                </div>
+            </div>
+            
+            <!-- Balance Card -->
+            <div class="page-balance-card">
+                <div class="page-balance-label">আপনার মোট আয়</div>
+                <div class="page-balance-amount" id="supportTotalEarnings">০ টাকা</div>
+            </div>
+            
+            <!-- Support Info -->
+            <div class="support-info">
+                <div class="section-title">সাপোর্ট ও যোগাযোগ</div>
+                
+                <div class="support-item">
+                    <div class="support-icon">
+                        <i class="fab fa-telegram"></i>
+                    </div>
+                    <div class="support-details">
+                        <div class="support-title">টেলিগ্রাম গ্রুপ</div>
+                        <div class="support-value">@moneyhunt_support</div>
+                    </div>
+                </div>
+                
+                <div class="support-item">
+                    <div class="support-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="support-details">
+                        <div class="support-title">ইমেইল</div>
+                        <div class="support-value">support@moneyhunt.com</div>
+                    </div>
+                </div>
+                
+                <div class="support-item">
+                    <div class="support-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="support-details">
+                        <div class="support-title">সাপোর্ট সময়</div>
+                        <div class="support-value">সকাল ৯টা - রাত ১০টা</div>
+                    </div>
+                </div>
+                
+                <div class="support-item">
+                    <div class="support-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <div class="support-details">
+                        <div class="support-title">লাইভ চ্যাট</div>
+                        <div class="support-value">২৪/৭ উপলব্ধ</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer Navigation -->
+        <div class="footer">
+            <a href="#" class="footer-item" data-page="homePage">
+                <i class="fas fa-home footer-icon"></i>
+                <span>হোম</span>
+            </a>
+            <a href="#" class="footer-item" data-page="tasksPage">
+                <i class="fas fa-tasks footer-icon"></i>
+                <span>টাস্ক</span>
+            </a>
+            <a href="#" class="footer-item" data-page="withdrawPage">
+                <i class="fas fa-wallet footer-icon"></i>
+                <span>উইথড্র</span>
+            </a>
+            <a href="#" class="footer-item" data-page="historyPage">
+                <i class="fas fa-history footer-icon"></i>
+                <span>হিস্ট্রি</span>
+            </a>
+            <a href="#" class="footer-item active" data-page="supportPage">
+                <i class="fas fa-headset footer-icon"></i>
+                <span>সাপোর্ট</span>
+            </a>
+        </div>
+    </div>
+
     <script>
         // Telegram Web App Integration
         let tg = window.Telegram?.WebApp;
@@ -1201,6 +1671,12 @@
                     updateHomePage();
                 } else if (targetPage === 'tasksPage') {
                     updateTasksPage();
+                } else if (targetPage === 'withdrawPage') {
+                    updateWithdrawPage();
+                } else if (targetPage === 'historyPage') {
+                    updateHistoryPage();
+                } else if (targetPage === 'supportPage') {
+                    updateSupportPage();
                 }
             });
         });
@@ -1222,6 +1698,11 @@
             } else {
                 fallbackCopyText(referralLink);
             }
+        });
+
+        // Withdraw button
+        document.getElementById('withdrawBtn').addEventListener('click', function() {
+            processWithdrawal();
         });
 
         // Fallback copy function
@@ -1260,6 +1741,12 @@
                     document.getElementById('userId').textContent = `ID: ${userId}`;
                     document.getElementById('tasksUserName').textContent = userName;
                     document.getElementById('tasksUserId').textContent = `ID: ${userId}`;
+                    document.getElementById('withdrawUserName').textContent = userName;
+                    document.getElementById('withdrawUserId').textContent = `ID: ${userId}`;
+                    document.getElementById('historyUserName').textContent = userName;
+                    document.getElementById('historyUserId').textContent = `ID: ${userId}`;
+                    document.getElementById('supportUserName').textContent = userName;
+                    document.getElementById('supportUserId').textContent = `ID: ${userId}`;
                     
                     // Display profile photo if available
                     if (user.photo_url) {
@@ -1275,6 +1762,12 @@
                     document.getElementById('userId').textContent = `ID: ${userId}`;
                     document.getElementById('tasksUserName').textContent = 'ডেমো ইউজার';
                     document.getElementById('tasksUserId').textContent = `ID: ${userId}`;
+                    document.getElementById('withdrawUserName').textContent = 'ডেমো ইউজার';
+                    document.getElementById('withdrawUserId').textContent = `ID: ${userId}`;
+                    document.getElementById('historyUserName').textContent = 'ডেমো ইউজার';
+                    document.getElementById('historyUserId').textContent = `ID: ${userId}`;
+                    document.getElementById('supportUserName').textContent = 'ডেমো ইউজার';
+                    document.getElementById('supportUserId').textContent = `ID: ${userId}`;
                     console.log('Using demo user:', userId);
                 }
             } catch (error) {
@@ -1285,6 +1778,12 @@
                 document.getElementById('userId').textContent = `ID: ${userId}`;
                 document.getElementById('tasksUserName').textContent = 'ইউজার';
                 document.getElementById('tasksUserId').textContent = `ID: ${userId}`;
+                document.getElementById('withdrawUserName').textContent = 'ইউজার';
+                document.getElementById('withdrawUserId').textContent = `ID: ${userId}`;
+                document.getElementById('historyUserName').textContent = 'ইউজার';
+                document.getElementById('historyUserId').textContent = `ID: ${userId}`;
+                document.getElementById('supportUserName').textContent = 'ইউজার';
+                document.getElementById('supportUserId').textContent = `ID: ${userId}`;
             }
         }
 
@@ -1313,6 +1812,9 @@
                         completedTasks: {}
                     });
                     
+                    // Add join bonus transaction
+                    await addTransaction('join_bonus', 50, 'জয়েন বোনাস');
+                    
                     console.log('New user created with 50 Taka bonus');
                     updateUserUI({ totalEarnings: 50, todayAds: 0, totalReferrals: 0 });
                     
@@ -1330,6 +1832,9 @@
                                 totalEarnings: window.firebaseIncrement(150),
                                 totalReferrals: window.firebaseIncrement(1)
                             });
+                            
+                            // Add referral bonus transaction for referrer
+                            await addTransaction('referral_bonus', 150, 'রেফারেল বোনাস', referrerRef);
                             
                             console.log('Referral bonus added to referrer');
                             showMessage('রেফারেল বোনাস যোগ করা হয়েছে!', 'success');
@@ -1373,6 +1878,9 @@
             if (data.totalEarnings !== undefined) {
                 document.getElementById('totalEarnings').textContent = `${data.totalEarnings} টাকা`;
                 document.getElementById('tasksTotalEarnings').textContent = `${data.totalEarnings} টাকা`;
+                document.getElementById('withdrawTotalEarnings').textContent = `${data.totalEarnings} টাকা`;
+                document.getElementById('historyTotalEarnings').textContent = `${data.totalEarnings} টাকা`;
+                document.getElementById('supportTotalEarnings').textContent = `${data.totalEarnings} টাকা`;
             }
             if (data.todayAds !== undefined) {
                 document.getElementById('todayAds').textContent = data.todayAds;
@@ -1394,6 +1902,187 @@
         function updateTasksPage() {
             // Additional tasks page updates if needed
             console.log('Tasks page updated');
+        }
+
+        // Update withdraw page
+        function updateWithdrawPage() {
+            // Update withdraw button state based on balance
+            const balance = parseInt(document.getElementById('withdrawTotalEarnings').textContent) || 0;
+            const withdrawBtn = document.getElementById('withdrawBtn');
+            
+            if (balance < 200) {
+                withdrawBtn.disabled = true;
+                withdrawBtn.textContent = `ন্যূনতম ২০০ টাকা প্রয়োজন (আপনার আছে ${balance} টাকা)`;
+            } else {
+                withdrawBtn.disabled = false;
+                withdrawBtn.textContent = 'উত্তোলন রিকোয়েস্ট করুন';
+            }
+            
+            console.log('Withdraw page updated');
+        }
+
+        // Update history page
+        async function updateHistoryPage() {
+            await loadTransactionHistory();
+            console.log('History page updated');
+        }
+
+        // Update support page
+        function updateSupportPage() {
+            console.log('Support page updated');
+        }
+
+        // Load transaction history
+        async function loadTransactionHistory() {
+            if (!userId) return;
+            
+            try {
+                const transactionsRef = window.firebaseCollection(window.firebaseDb, "transactions");
+                const q = window.firebaseQuery(
+                    transactionsRef, 
+                    window.firebaseWhere("userId", "==", userId),
+                    window.firebaseOrderBy("timestamp", "desc")
+                );
+                
+                const querySnapshot = await window.firebaseGetDocs(q);
+                const historyList = document.getElementById('historyList');
+                
+                if (querySnapshot.empty) {
+                    historyList.innerHTML = `
+                        <div class="history-empty">
+                            <i class="fas fa-history" style="font-size: 40px; margin-bottom: 10px; color: #bdc3c7;"></i>
+                            <div>কোন ট্রানজেকশন নেই</div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                historyList.innerHTML = '';
+                querySnapshot.forEach((doc) => {
+                    const transaction = doc.data();
+                    const transactionItem = createTransactionItem(transaction);
+                    historyList.appendChild(transactionItem);
+                });
+                
+            } catch (error) {
+                console.error('Error loading transaction history:', error);
+                showMessage('হিস্ট্রি লোড করতে সমস্যা হয়েছে!', 'error');
+            }
+        }
+
+        // Create transaction item
+        function createTransactionItem(transaction) {
+            const item = document.createElement('div');
+            item.className = 'history-item';
+            
+            const amountClass = transaction.amount > 0 ? 'positive' : 'negative';
+            const amountSign = transaction.amount > 0 ? '+' : '';
+            const date = transaction.timestamp?.toDate ? transaction.timestamp.toDate() : new Date();
+            
+            item.innerHTML = `
+                <div class="history-details">
+                    <div class="history-type">${transaction.description}</div>
+                    <div class="history-date">${formatDate(date)}</div>
+                </div>
+                <div class="history-amount ${amountClass}">
+                    ${amountSign}${transaction.amount} টাকা
+                </div>
+            `;
+            
+            return item;
+        }
+
+        // Format date
+        function formatDate(date) {
+            return date.toLocaleDateString('bn-BD', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Add transaction
+        async function addTransaction(type, amount, description, customRef = null) {
+            try {
+                const transactionsRef = window.firebaseCollection(window.firebaseDb, "transactions");
+                await window.firebaseAddDoc(transactionsRef, {
+                    userId: customRef ? customRef.id : userId,
+                    type: type,
+                    amount: amount,
+                    description: description,
+                    timestamp: window.firebaseServerTimestamp()
+                });
+            } catch (error) {
+                console.error('Error adding transaction:', error);
+            }
+        }
+
+        // Process withdrawal
+        async function processWithdrawal() {
+            const method = document.getElementById('withdrawMethod').value;
+            const accountNumber = document.getElementById('accountNumber').value;
+            const amount = parseInt(document.getElementById('withdrawAmount').value);
+            const balance = parseInt(document.getElementById('withdrawTotalEarnings').textContent) || 0;
+            
+            // Validation
+            if (!accountNumber) {
+                showMessage('অ্যাকাউন্ট নম্বর দিন!', 'error');
+                return;
+            }
+            
+            if (!amount || amount < 200) {
+                showMessage('ন্যূনতম ২০০ টাকা উত্তোলন করতে হবে!', 'error');
+                return;
+            }
+            
+            if (amount > balance) {
+                showMessage('আপনার ব্যালেন্স যথেষ্ট নয়!', 'error');
+                return;
+            }
+            
+            try {
+                const withdrawBtn = document.getElementById('withdrawBtn');
+                withdrawBtn.disabled = true;
+                withdrawBtn.textContent = 'প্রসেসিং...';
+                
+                // Update user balance
+                await window.firebaseUpdateDoc(userRef, {
+                    totalEarnings: window.firebaseIncrement(-amount)
+                });
+                
+                // Add withdrawal transaction
+                await addTransaction('withdrawal', -amount, `${method} উত্তোলন`);
+                
+                // Create withdrawal request
+                const withdrawalsRef = window.firebaseCollection(window.firebaseDb, "withdrawals");
+                await window.firebaseAddDoc(withdrawalsRef, {
+                    userId: userId,
+                    method: method,
+                    accountNumber: accountNumber,
+                    amount: amount,
+                    status: 'pending',
+                    timestamp: window.firebaseServerTimestamp()
+                });
+                
+                showMessage('উত্তোলন রিকোয়েস্ট সফলভাবে জমা হয়েছে!', 'success');
+                
+                // Reset form
+                document.getElementById('accountNumber').value = '';
+                document.getElementById('withdrawAmount').value = '200';
+                
+                // Update UI
+                updateWithdrawPage();
+                
+            } catch (error) {
+                console.error('Error processing withdrawal:', error);
+                showMessage('উত্তোলন রিকোয়েস্ট করতে সমস্যা হয়েছে!', 'error');
+                
+                const withdrawBtn = document.getElementById('withdrawBtn');
+                withdrawBtn.disabled = false;
+                withdrawBtn.textContent = 'উত্তোলন রিকোয়েস্ট করুন';
+            }
         }
 
         // Load Monetag ad - COMPLETELY FIXED
@@ -1456,6 +2145,9 @@
                         totalEarnings: window.firebaseIncrement(20),
                         todayAds: window.firebaseIncrement(1)
                     });
+                    
+                    // Add transaction
+                    await addTransaction('ad_watch', 20, 'বিজ্ঞাপন দেখার রিওয়ার্ড');
                     
                     showMessage('বিজ্ঞাপন দেখার জন্য আপনাকে ২০ টাকা দেওয়া হয়েছে! 🎉', 'success');
                     console.log('20 Taka added for watching ad');
