@@ -11,15 +11,14 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc, increment, collection, query, where, getDocs, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-        import { getStorage } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
         
-        // Firebase configuration - CORRECTED
+        // Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAvqIn229gt2_pZNmSXQrI1LQQRmJcrhME",
             authDomain: "money--hunt-test.firebaseapp.com",
             databaseURL: "https://money--hunt-test-default-rtdb.firebaseio.com",
             projectId: "money--hunt-test",
-            storageBucket: "money--hunt-test.appspot.com", // FIXED: Correct storage bucket URL
+            storageBucket: "money--hunt-test.firebasestorage.app",
             messagingSenderId: "322666407843",
             appId: "1:322666407843:web:6857fec8d064c0add25c16",
             measurementId: "G-CNWHF1KTRR"
@@ -29,12 +28,10 @@
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
         
         // Make Firebase available globally
         window.firebaseApp = app;
         window.firebaseDb = db;
-        window.firebaseStorage = storage;
         window.firebaseDoc = doc;
         window.firebaseSetDoc = setDoc;
         window.firebaseGetDoc = getDoc;
@@ -2345,7 +2342,7 @@
                 // Initialize user data in Firebase
                 initUserData();
                 
-                // Generate and display referral link - FIXED
+                // Generate referral link
                 referralCode = userId;
                 const referralLink = `https://t.me/hojoborol321_bot?start=${referralCode}`;
                 document.getElementById('referralLink').textContent = referralLink;
@@ -2353,8 +2350,7 @@
                 // Fallback for non-Telegram environment
                 document.getElementById('userName').textContent = 'ডেমো ইউজার';
                 document.getElementById('userId').textContent = 'ID: 123456';
-                const referralLink = 'https://t.me/hojoborol321_bot?start=demo123';
-                document.getElementById('referralLink').textContent = referralLink;
+                document.getElementById('referralLink').textContent = 'https://t.me/hojoborol321_bot?start=demo123';
                 document.getElementById('totalEarnings').textContent = '৫০ টাকা';
             }
             
@@ -2451,7 +2447,7 @@
             }
         }
         
-        // Initialize user data in Firebase - FIXED with referral logic
+        // Initialize user data in Firebase
         async function initUserData() {
             if (!userId) return;
             
@@ -2460,12 +2456,8 @@
             const userSnap = await window.firebaseGetDoc(userRef);
             
             if (!userSnap.exists()) {
-                // Check for referral code in URL - FIXED referral logic
-                const urlParams = new URLSearchParams(window.location.search);
-                const refCode = urlParams.get('ref');
-                
                 // Create new user with initial 50 Taka bonus
-                const userData = {
+                await window.firebaseSetDoc(userRef, {
                     name: document.getElementById('userName').textContent,
                     telegramId: userId,
                     totalEarnings: 50,
@@ -2480,34 +2472,21 @@
                         telegram4: false,
                         youtube: false
                     }
-                };
-                
-                // Add referral information if available
-                if (refCode) {
-                    userData.referredBy = refCode;
-                }
-                
-                await window.firebaseSetDoc(userRef, userData);
+                });
                 
                 document.getElementById('totalEarnings').textContent = '৫০ টাকা';
                 
-                // Add 150 Taka to referrer if referral code exists - FIXED referral bonus
+                // Check for referral code in URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const refCode = urlParams.get('ref');
+                
                 if (refCode) {
-                    try {
-                        const referrerRef = window.firebaseDoc(window.firebaseDb, "users", refCode);
-                        const referrerSnap = await window.firebaseGetDoc(referrerRef);
-                        
-                        if (referrerSnap.exists()) {
-                            await window.firebaseUpdateDoc(referrerRef, {
-                                totalEarnings: window.firebaseIncrement(150),
-                                totalReferrals: window.firebaseIncrement(1)
-                            });
-                            
-                            console.log('Referral bonus added to referrer');
-                        }
-                    } catch (error) {
-                        console.error('Error adding referral bonus:', error);
-                    }
+                    // Add 150 Taka to referrer
+                    const referrerRef = window.firebaseDoc(window.firebaseDb, "users", refCode);
+                    await window.firebaseUpdateDoc(referrerRef, {
+                        totalEarnings: window.firebaseIncrement(150),
+                        totalReferrals: window.firebaseIncrement(1)
+                    });
                 }
             } else {
                 // Update user data in UI
@@ -2609,78 +2588,51 @@
         
         // Setup event listeners for home page
         function setupEventListeners() {
-            // Copy referral link - FIXED
+            // Copy referral link
             document.getElementById('copyBtn').addEventListener('click', function() {
                 const referralLink = document.getElementById('referralLink').textContent;
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(referralLink).then(function() {
-                        showMessage('রেফারেল লিংক কপি করা হয়েছে', 'success');
-                    }).catch(function() {
-                        fallbackCopyText(referralLink);
-                    });
-                } else {
-                    fallbackCopyText(referralLink);
-                }
+                navigator.clipboard.writeText(referralLink).then(function() {
+                    if (tg) {
+                        tg.showPopup({
+                            title: 'কপি হয়েছে!',
+                            message: 'রেফারেল লিংক কপি করা হয়েছে',
+                            buttons: [{ type: 'ok' }]
+                        });
+                    } else {
+                        alert('রেফারেল লিংক কপি করা হয়েছে');
+                    }
+                });
             });
-            
-            // Fallback copy function
-            function fallbackCopyText(text) {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    showMessage('রেফারেল লিংক কপি করা হয়েছে', 'success');
-                } catch (err) {
-                    showMessage('কপি করতে সমস্যা হয়েছে', 'error');
-                }
-                document.body.removeChild(textArea);
-            }
         }
         
-        // Load Monetag ad - IMPROVED with actual ad integration
+        // Load Monetag ad
         function loadMonetagAd() {
-            // Show loading state
-            const adBtn = document.getElementById('watchAdBtn');
-            const originalText = adBtn.innerHTML;
-            adBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> লোড হচ্ছে...';
-            adBtn.disabled = true;
-            
             // Create and append Monetag script
             const script = document.createElement('script');
             script.src = '//libtl.com/sdk.js';
             script.setAttribute('data-zone', '10065083');
             script.setAttribute('data-sdk', 'show_10065083');
-            
-            script.onload = function() {
-                // Ad loaded successfully
-                setTimeout(function() {
-                    // Simulate ad completion and add 20 Taka - FIXED ad reward logic
-                    if (userRef) {
-                        window.firebaseUpdateDoc(userRef, {
-                            totalEarnings: window.firebaseIncrement(20),
-                            todayAds: window.firebaseIncrement(1)
-                        });
-                        
-                        showMessage('বিজ্ঞাপন দেখার জন্য আপনাকে ২০ টাকা দেওয়া হয়েছে', 'success');
-                    }
-                    
-                    // Reset button
-                    adBtn.innerHTML = originalText;
-                    adBtn.disabled = false;
-                }, 5000); // Simulate 5 seconds ad watching
-            };
-            
-            script.onerror = function() {
-                // Ad failed to load
-                showMessage('বিজ্ঞাপন লোড করতে সমস্যা হয়েছে, পরে আবার চেষ্টা করুন', 'error');
-                adBtn.innerHTML = originalText;
-                adBtn.disabled = false;
-            };
-            
             document.body.appendChild(script);
+            
+            // Simulate ad completion and add 20 Taka
+            setTimeout(function() {
+                if (userRef) {
+                    window.firebaseUpdateDoc(userRef, {
+                        totalEarnings: window.firebaseIncrement(20),
+                        todayAds: window.firebaseIncrement(1)
+                    });
+                    
+                    if (tg) {
+                        tg.showPopup({
+                            title: 'সফল!',
+                            message: 'বিজ্ঞাপন দেখার জন্য আপনাকে ২০ টাকা দেওয়া হয়েছে',
+                            buttons: [{ type: 'ok' }]
+                        });
+                    } else {
+                        alert('বিজ্ঞাপন দেখার জন্য আপনাকে ২০ টাকা দেওয়া হয়েছে');
+                    }
+                }
+            }, 5000); // Simulate 5 seconds ad watching
         }
         
         // Check Telegram subscription
@@ -2724,10 +2676,26 @@
                     document.getElementById(`claimTelegramBtn${taskNumber}`).classList.add('claimed-btn');
                     document.getElementById(`claimTelegramBtn${taskNumber}`).disabled = true;
                     
-                    showMessage(`টেলিগ্রাম চ্যানেলে জয়েন করার জন্য আপনাকে ${rewardAmount} টাকা দেওয়া হয়েছে`, 'success');
+                    if (tg) {
+                        tg.showPopup({
+                            title: 'সফল!',
+                            message: `টেলিগ্রাম চ্যানেলে জয়েন করার জন্য আপনাকে ${rewardAmount} টাকা দেওয়া হয়েছে`,
+                            buttons: [{ type: 'ok' }]
+                        });
+                    } else {
+                        alert(`টেলিগ্রাম চ্যানেলে জয়েন করার জন্য আপনাকে ${rewardAmount} টাকা দেওয়া হয়েছে`);
+                    }
                 }
             } else {
-                showMessage('আপনি এখনো টেলিগ্রাম চ্যানেলে জয়েন করেন নি। জয়েন না করার কারনে আপনার টাকা যোগ হবে না', 'error');
+                if (tg) {
+                    tg.showPopup({
+                        title: 'ব্যর্থ!',
+                        message: 'আপনি এখনো টেলিগ্রাম চ্যানেলে জয়েন করেন নি। জয়েন না করার কারনে আপনার টাকা যোগ হবে না',
+                        buttons: [{ type: 'ok' }]
+                    });
+                } else {
+                    alert('আপনি এখনো টেলিগ্রাম চ্যানেলে জয়েন করেন নি। জয়েন না করার কারনে আপনার টাকা যোগ হবে না');
+                }
             }
         }
         
@@ -2750,10 +2718,26 @@
                     document.getElementById('claimYoutubeBtn').classList.add('claimed-btn');
                     document.getElementById('claimYoutubeBtn').disabled = true;
                     
-                    showMessage('ইউটিউব চ্যানেলে সাবস্ক্রাইব করার জন্য আপনাকে ২০০ টাকা দেওয়া হয়েছে', 'success');
+                    if (tg) {
+                        tg.showPopup({
+                            title: 'সফল!',
+                            message: 'ইউটিউব চ্যানেলে সাবস্ক্রাইব করার জন্য আপনাকে ২০০ টাকা দেওয়া হয়েছে',
+                            buttons: [{ type: 'ok' }]
+                        });
+                    } else {
+                        alert('ইউটিউব চ্যানেলে সাবস্ক্রাইব করার জন্য আপনাকে ২০০ টাকা দেওয়া হয়েছে');
+                    }
                 }
             } else {
-                showMessage('আপনি এখনো ইউটিউব চ্যানেলে সাবস্ক্রাইব করেন নি। সাবস্ক্রাইব না করার কারনে আপনার টাকা যোগ হবে না', 'error');
+                if (tg) {
+                    tg.showPopup({
+                        title: 'ব্যর্থ!',
+                        message: 'আপনি এখনো ইউটিউব চ্যানেলে সাবস্ক্রাইব করেন নি। সাবস্ক্রাইব না করার কারনে আপনার টাকা যোগ হবে না',
+                        buttons: [{ type: 'ok' }]
+                    });
+                } else {
+                    alert('আপনি এখনো ইউটিউব চ্যানেলে সাবস্ক্রাইব করেন নি। সাবস্ক্রাইব না করার কারনে আপনার টাকা যোগ হবে না');
+                }
             }
         }
         
@@ -2764,17 +2748,17 @@
             const amount = parseInt(document.getElementById('withdrawAmount').value);
             
             if (!selectedMethod) {
-                showMessage('দয়া করে একটি পদ্ধতি নির্বাচন করুন', 'error');
+                showMessage('দয়া করে একটি পদ্ধতি নির্বাচন করুন');
                 return;
             }
             
             if (!accountNumber) {
-                showMessage('দয়া করে আপনার একাউন্ট নম্বর লিখুন', 'error');
+                showMessage('দয়া করে আপনার একাউন্ট নম্বর লিখুন');
                 return;
             }
             
             if (!amount || amount < 1500) {
-                showMessage('উত্তোলনের জন্য ন্যূনতম ১৫০০ টাকা হতে হবে', 'error');
+                showMessage('উত্তোলনের জন্য ন্যূনতম ১৫০০ টাকা হতে হবে');
                 return;
             }
             
@@ -2789,20 +2773,20 @@
             // Check eligibility
             if (currentBalance < 1500) {
                 if (currentReferrals < 20) {
-                    showMessage('আপনার পর্যাপ্ত ব্যালেন্স ও রেফার করা নেই', 'error');
+                    showMessage('আপনার পর্যাপ্ত ব্যালেন্স ও রেফার করা নেই');
                 } else {
-                    showMessage('আপনার পর্যাপ্ত টাকা নেই', 'error');
+                    showMessage('আপনার পর্যাপ্ত টাকা নেই');
                 }
                 return;
             }
             
             if (currentReferrals < 20) {
-                showMessage('আপনার পর্যাপ্ত রেফার নেই দয়া করে রেফার পূরন করুন', 'error');
+                showMessage('আপনার পর্যাপ্ত রেফার নেই দয়া করে রেফার পূরন করুন');
                 return;
             }
             
             if (amount > currentBalance) {
-                showMessage('আপনার একাউন্টে পর্যাপ্ত টাকা নেই', 'error');
+                showMessage('আপনার একাউন্টে পর্যাপ্ত টাকা নেই');
                 return;
             }
             
@@ -2823,7 +2807,7 @@
                     telegramUsername: userData.telegramUsername || 'N/A'
                 });
                 
-                showMessage('উইথড্র রিকোয়েস্ট সফলভাবে জমা হয়েছে', 'success');
+                showMessage('Request Successful', 'success');
                 
                 // Reset form
                 document.getElementById('accountNumber').value = '';
@@ -2834,7 +2818,7 @@
                 
             } catch (error) {
                 console.error('Error submitting withdraw request:', error);
-                showMessage('রিকোয়েস্ট জমা দিতে সমস্যা হয়েছে, পরে আবার চেষ্টা করুন', 'error');
+                showMessage('রিকোয়েস্ট জমা দিতে সমস্যা হয়েছে, পরে আবার চেষ্টা করুন');
             }
         }
         
@@ -2895,46 +2879,16 @@
             }
         }
         
-        // Show message function - IMPROVED
-        function showMessage(message, type = 'info') {
-            const messageTypes = {
-                'success': { title: 'সফল!', color: '#27ae60' },
-                'error': { title: 'ত্রুটি!', color: '#e74c3c' },
-                'info': { title: 'মেসেজ', color: '#3498db' }
-            };
-            
-            const msgConfig = messageTypes[type] || messageTypes['info'];
-            
+        // Show message function
+        function showMessage(message, type = 'error') {
             if (tg) {
                 tg.showPopup({
-                    title: msgConfig.title,
+                    title: type === 'success' ? 'সফল!' : 'ত্রুটি!',
                     message: message,
                     buttons: [{ type: 'ok' }]
                 });
             } else {
-                // Create custom alert for non-Telegram environment
-                const alertDiv = document.createElement('div');
-                alertDiv.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    background: ${msgConfig.color};
-                    color: white;
-                    padding: 12px 20px;
-                    border-radius: 10px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                    z-index: 1000;
-                    font-weight: 600;
-                    max-width: 90%;
-                    text-align: center;
-                `;
-                alertDiv.textContent = message;
-                document.body.appendChild(alertDiv);
-                
-                setTimeout(() => {
-                    document.body.removeChild(alertDiv);
-                }, 3000);
+                alert(message);
             }
         }
     </script>
