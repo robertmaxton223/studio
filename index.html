@@ -108,7 +108,7 @@
           font-weight: 700;
           z-index: 2;
           letter-spacing: 0.5px;
-          margin-top: -20px; /* Move title higher */
+          margin-top: -30px; /* Moved even higher */
       }
 
       .theme-toggle {
@@ -998,6 +998,44 @@
           bottom: 90px;
       }
 
+      /* Withdraw Requirements Box */
+      .requirements-box {
+          background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 209, 102, 0.1));
+          border: 1px solid var(--border-color);
+          border-radius: var(--border-radius-sm);
+          padding: 15px;
+          margin-bottom: 20px;
+          text-align: center;
+      }
+
+      .requirements-title {
+          font-weight: 600;
+          color: var(--primary-color);
+          margin-bottom: 10px;
+          font-size: 1rem;
+      }
+
+      .requirements-list {
+          display: flex;
+          justify-content: space-around;
+          margin-top: 10px;
+      }
+
+      .requirement-item {
+          text-align: center;
+      }
+
+      .requirement-number {
+          font-size: 1.2rem;
+          font-weight: 700;
+          color: var(--primary-color);
+      }
+
+      .requirement-text {
+          font-size: 0.75rem;
+          color: var(--text-secondary);
+      }
+
       /* Responsive Adjustments */
       @media (max-width: 480px) {
           .profile-card {
@@ -1107,7 +1145,7 @@
       const DEVELOPER_WEBSITE_LINK = "https://t.me/Tech_by_juned";
       const OFFICIAL_CHANNEL_LINK = "https://t.me/Task_Payment_Prove";
       const SUPPORT_GROUP_LINK = "https://t.me/+QthlmOWa9IU5NTRl";
-      const REFERRAL_BOT_LINK = "https://t.me/Shadhenincomebot";
+      const REFERRAL_BOT_LINK = "https://t.me/hojoborol321_bot";
       const BONUS_CHANNELS = [
           { id: 'tg_official_channel', name: 'Official Channel', link: OFFICIAL_CHANNEL_LINK, reward: 50, icon: 'fab fa-telegram-plane' },
           { id: 'tg_support_group', name: 'Payment Group', link: SUPPORT_GROUP_LINK, reward: 50, icon: 'fas fa-headset' },
@@ -1495,11 +1533,20 @@
                   <h2 class="section-title">
                       <i class="fas fa-wallet"></i> Withdraw
                   </h2>
-                  <p class="task-description">
-                      <b>Convert 100 Taka = 100 Taka
-                       
-                       Minimum Withdraw 1000 Taka.</b>
-                  </p>
+                  <div class="requirements-box">
+                      <div class="requirements-title">Withdrawal Requirements</div>
+                      <p style="font-size: 0.85rem; margin-bottom: 10px;">You need 1000 Taka and 20 referrals to withdraw. Otherwise withdrawal is not possible.</p>
+                      <div class="requirements-list">
+                          <div class="requirement-item">
+                              <div class="requirement-number">${currentUser.points}/1000</div>
+                              <div class="requirement-text">Taka</div>
+                          </div>
+                          <div class="requirement-item">
+                              <div class="requirement-number">${referredUsersCount}/20</div>
+                              <div class="requirement-text">Referrals</div>
+                          </div>
+                      </div>
+                  </div>
                   <div class="input-group">
                       <label class="input-label">Amount (Taka)</label>
                       <input type="number" id="withdrawAmountInput" class="input-field" placeholder="Enter amount">
@@ -1512,8 +1559,8 @@
                       </select>
                   </div>
                   <div class="input-group">
-                      <label class="input-label">Enter your Telegram Username</label>
-                      <input type="text" id="withdrawAccountInput" class="input-field" placeholder="Enter your account details">
+                      <label class="input-label">Enter your Phone Number</label>
+                      <input type="tel" id="withdrawAccountInput" class="input-field" placeholder="01XXXXXXXXX" pattern="[0-9]{11}" required>
                   </div>
                   <button class="btn btn-primary" id="submitWithdrawBtn">
                       <i class="fas fa-paper-plane"></i> Submit Request
@@ -1796,13 +1843,21 @@
               return;
           }
           if (!account) {
-              statusMsg.textContent = "Please enter your account details.";
+              statusMsg.textContent = "Please enter your phone number.";
+              statusMsg.classList.add('error-message');
+              return;
+          }
+
+          // Phone number validation
+          const phoneRegex = /^01[3-9]\d{8}$/;
+          if (!phoneRegex.test(account)) {
+              statusMsg.textContent = "Please enter a valid Bangladeshi phone number (e.g., 01XXXXXXXXX).";
               statusMsg.classList.add('error-message');
               return;
           }
 
           // Check for minimum 1000 Taka and 20 referrals
-          if (amount >= 1000 && referredUsersCount >= 20) {
+          if (currentUser.points >= 1000 && referredUsersCount >= 20) {
               // Success case
               const escapeMarkdown = (text) => {
                   return text.replace(/([_*\[\]()~`>#+\-=|{}.!])/g, '\\$1');
@@ -1815,7 +1870,7 @@
 👤 *𝗨𝘀𝗲𝗿 𝗡𝗮𝗺𝗲 :* \`${escapeMarkdown(currentUser.name)}\`
 💰 *𝗧𝗮𝗸𝗮 :* ${amount}
 💳 *𝗠𝗲𝘁𝗵𝗼𝗱 :* ${escapeMarkdown(method)}
-🏦 *𝗪𝗮𝗹𝗹𝗲𝘁 :* \`${escapeMarkdown(account)}\`
+📱 *𝗣𝗵𝗼𝗻𝗲 :* \`${escapeMarkdown(account)}\`
 ------------------------------------
 ♎ 𝗠𝗮𝗶𝗻 𝗕𝗮𝗹𝗮𝗻𝗰𝗲 : ${currentUser.points - amount}
 👀 𝗧𝗼𝘁𝗮𝗹 𝗔𝗱𝘀 𝗪𝗮𝘁𝗰𝗵𝗲𝗱 : ${currentUser.totalAdsWatchedLifetime}
@@ -1829,21 +1884,21 @@
               updateUI();
               saveUserState();
 
-              statusMsg.textContent = "Request Successful";
+              statusMsg.textContent = "Withdrawal Request Successful";
               statusMsg.classList.add('success-message');
               document.getElementById('withdrawAmountInput').value = "";
               document.getElementById('withdrawMethodSelect').value = "";
               document.getElementById('withdrawAccountInput').value = "";
           } else {
               // Error cases
-              if (amount < 1000 && referredUsersCount < 20) {
-                  statusMsg.textContent = "Your balance and referrals are insufficient";
+              if (currentUser.points < 1000 && referredUsersCount < 20) {
+                  statusMsg.textContent = "টাকা ও রেফার পর্যাপ্ত করা নেই";
                   statusMsg.classList.add('error-message');
-              } else if (amount < 1000) {
-                  statusMsg.textContent = "You don't have enough Taka";
+              } else if (currentUser.points < 1000) {
+                  statusMsg.textContent = "পর্যাপ্ত টাকা নেই";
                   statusMsg.classList.add('error-message');
               } else if (referredUsersCount < 20) {
-                  statusMsg.textContent = "You don't have enough referrals, please complete referrals";
+                  statusMsg.textContent = "রেফার পূরন করা নাই";
                   statusMsg.classList.add('error-message');
               }
           }
